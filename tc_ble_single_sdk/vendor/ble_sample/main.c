@@ -25,7 +25,9 @@
 #include "drivers.h"
 #include "stack/ble/ble.h"
 #include "app.h"
-
+#include "gpio.h"
+#include "timer.h"
+#include "application/uartinterface/uart_interface.h"
 
 /**
  * @brief   IRQ handler
@@ -48,47 +50,93 @@ _attribute_ram_code_ void irq_handler(void)
 _attribute_ram_code_ int main (void)    //must run in ramcode
 {
 
-	DBG_CHN0_LOW;   //debug
+	// DBG_CHN0_LOW;   //debug
 
-	blc_pm_select_internal_32k_crystal();
+	// blc_pm_select_internal_32k_crystal();
 
-	#if(MCU_CORE_TYPE == MCU_CORE_825x)
+	// #if(MCU_CORE_TYPE == MCU_CORE_825x)
 		cpu_wakeup_init();
-	#else
-		cpu_wakeup_init(LDO_MODE,INTERNAL_CAP_XTAL24M);
-	#endif
+	// #else
+	// 	cpu_wakeup_init(LDO_MODE,INTERNAL_CAP_XTAL24M);
+	// #endif
 
-	int deepRetWakeUp = pm_is_MCU_deepRetentionWakeup();  //MCU deep retention wakeUp
+	// int deepRetWakeUp = pm_is_MCU_deepRetentionWakeup();  //MCU deep retention wakeUp
 
-	rf_drv_ble_init();
+	// rf_drv_ble_init();
 
-	gpio_init(!deepRetWakeUp);  //analog resistance will keep available in deepSleep mode, so no need initialize again
-
+	// gpio_init(!deepRetWakeUp);  //analog resistance will keep available in deepSleep mode, so no need initialize again
+	gpio_init(1);
 	clock_init(SYS_CLK_TYPE);
 
-	#if (MODULE_WATCHDOG_ENABLE)
-		wd_set_interval_ms(WATCHDOG_INIT_TIMEOUT,CLOCK_SYS_CLOCK_1MS);
-		wd_start();
-	#endif
+	// #if (MODULE_WATCHDOG_ENABLE)
+	// 	wd_set_interval_ms(WATCHDOG_INIT_TIMEOUT,CLOCK_SYS_CLOCK_1MS);
+	// 	wd_start();
+	// #endif
 
-	if( deepRetWakeUp ){
-		user_init_deepRetn();
-	}
-	else{
-		user_init_normal();
-	}
+	// if( deepRetWakeUp ){
+	// 	user_init_deepRetn();
+	// }
+	// else{
+		// user_init_normal();
+	// }
 
-    irq_enable();
+    // irq_enable();
+	UARTIF_uartinit();
+	gpio_set_output_en(GPIO_PD2, 1);
+	gpio_set_output_en(GPIO_PD3, 1);
+	gpio_set_output_en(GPIO_PD4, 1);
+	gpio_set_output_en(GPIO_PD5, 1);
+
+	gpio_write(GPIO_PD2, 1);
+	gpio_write(GPIO_PD3, 0);
+	gpio_write(GPIO_PD4, 0);
+	gpio_write(GPIO_PD5, 0);
+	// uart_ndma_send_byte('A');
+	UARTIF_uartPrintf("hello world\n");
 	while (1) {
-	#if (MODULE_WATCHDOG_ENABLE)
-		#if (MCU_CORE_TYPE == MCU_CORE_TC321X)
-			if (g_chip_version != CHIP_VERSION_A0)
-		#endif
-			{
-				wd_clear(); //clear watch dog
-			}
-	#endif
-		main_loop();
+	// #if (MODULE_WATCHDOG_ENABLE)
+	// 	#if (MCU_CORE_TYPE == MCU_CORE_TC321X)
+	// 		if (g_chip_version != CHIP_VERSION_A0)
+	// 	#endif
+	// 		{
+	// 			wd_clear(); //clear watch dog
+	// 		}
+	// #endif
+	// 	main_loop();
+
+	sleep_us(500000);
+
+	gpio_write(GPIO_PD2, 0);
+	gpio_write(GPIO_PD3, 1);
+	gpio_write(GPIO_PD4, 0);
+	gpio_write(GPIO_PD5, 0);
+	sleep_us(500000);
+	// uart_ndma_send_byte('6');
+	UARTIF_uartPrintf("===1===\n");
+
+	gpio_write(GPIO_PD2, 0);
+	gpio_write(GPIO_PD3, 0);
+	gpio_write(GPIO_PD4, 1);
+	gpio_write(GPIO_PD5, 0);
+	sleep_us(500000);
+	// uart_ndma_send_byte('7');
+	UARTIF_uartPrintf("===2===\n");
+
+	gpio_write(GPIO_PD2, 0);
+	gpio_write(GPIO_PD3, 0);
+	gpio_write(GPIO_PD4, 0);
+	gpio_write(GPIO_PD5, 1);
+	sleep_us(500000);
+	// uart_ndma_send_byte('8');
+	UARTIF_uartPrintf("===3===\n");
+
+	gpio_write(GPIO_PD2, 1);
+	gpio_write(GPIO_PD3, 0);
+	gpio_write(GPIO_PD4, 0);
+	gpio_write(GPIO_PD5, 0);
+	// uart_ndma_send_byte('9');
+	UARTIF_uartPrintf("===4===\n");
+
 	}
 }
 

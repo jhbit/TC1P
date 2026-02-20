@@ -27,10 +27,6 @@
 ./application/audio/tl_audio.h			TELINK_APACHE 
 ./application/keyboard/keyboard.c			TELINK_APACHE 
 ./application/keyboard/keyboard.h			TELINK_APACHE 
-./application/print/putchar.c			TELINK_APACHE 
-./application/print/putchar.h			TELINK_APACHE 
-./application/print/u_printf.c			TELINK_APACHE 
-./application/print/u_printf.h			TELINK_APACHE 
 ./application/usbstd/AudioClassCommon.h			TELINK_APACHE 
 ./application/usbstd/CDCClassCommon.h			TELINK_APACHE 
 ./application/usbstd/CDCClassDevice.h			TELINK_APACHE 
@@ -47,6 +43,8 @@
 ./application/usbstd/usbdesc.c			TELINK_APACHE 
 ./application/usbstd/usbdesc.h			TELINK_APACHE 
 ./application/usbstd/usbkeycode.h			TELINK_APACHE 
+./application/uartinterface/uart_interface.c			TELINK_APACHE 
+./application/uartinterface/uart_interface.h			TELINK_APACHE 
 ./boot/B85/cstartup_825x.S			TELINK_APACHE 
 ./boot/B87/cstartup_827x.S			TELINK_APACHE 
 ./boot/TC321x/cstartup_TC321X.S			TELINK_APACHE 
@@ -629,12 +627,8 @@
 ./vendor/ble_slave_2_4g_switch/main.c			TELINK_APACHE 
 ./vendor/common/app_buffer.c			TELINK_APACHE 
 ./vendor/common/app_buffer.h			TELINK_APACHE 
-./vendor/common/app_common.c			TELINK_APACHE 
-./vendor/common/app_common.h			TELINK_APACHE 
 ./vendor/common/battery_check.c			TELINK_APACHE 
 ./vendor/common/battery_check.h			TELINK_APACHE 
-./vendor/common/ble_flash.c			TELINK_APACHE 
-./vendor/common/ble_flash.h			TELINK_APACHE 
 ./vendor/common/blt_fw_sign.c			TELINK_APACHE 
 ./vendor/common/blt_fw_sign.h			TELINK_APACHE 
 ./vendor/common/blt_led.c			TELINK_APACHE 
@@ -655,13 +649,9 @@
 ./vendor/common/default_config.h			TELINK_APACHE 
 ./vendor/common/flash_fw_check.c			TELINK_APACHE 
 ./vendor/common/flash_fw_check.h			TELINK_APACHE 
-./vendor/common/flash_prot.c			TELINK_APACHE 
-./vendor/common/flash_prot.h			TELINK_APACHE 
 ./vendor/common/simple_sdp.c			TELINK_APACHE 
 ./vendor/common/simple_sdp.h			TELINK_APACHE 
 ./vendor/common/sync_word_check.c			TELINK_APACHE 
 ./vendor/common/sync_word_check.h			TELINK_APACHE 
-./vendor/common/tlkapi_debug.c			TELINK_APACHE 
-./vendor/common/tlkapi_debug.h			TELINK_APACHE 
 ./vendor/common/user_config.c			TELINK_APACHE 
 ./vendor/common/user_config.h			TELINK_APACHE 

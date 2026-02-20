@@ -66,9 +66,9 @@ typedef u8 bool;
 typedef	u16	wchar_t;		
 #endif
 
-#ifndef WIN32
-typedef u32 size_t;
-#endif
+// #ifndef WIN32
+// typedef u32 size_t;
+// #endif
 
 #define U32_MAX ((u32)0xffffffff)
 #define U16_MAX ((u16)0xffff)
