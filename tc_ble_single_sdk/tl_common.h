@@ -31,6 +31,8 @@
 #include "common/assert.h"
 #include "common/sdk_version.h"
 
+#include "application/print/u_printf.h"
+
 #include "vendor/common/user_config.h"
 #include "config.h"
 #include "common/string.h"
@@ -42,6 +44,7 @@
 #include "vendor/common/blt_led.h"
 #include "vendor/common/blt_soft_timer.h"
 #include "vendor/common/flash_fw_check.h"
+#include "vendor/common/tlkapi_debug.h"
 #include "vendor/common/app_buffer.h"
 #include "vendor/common/simple_sdp.h"
 #include "vendor/common/custom_pair.h"

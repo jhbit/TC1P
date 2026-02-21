@@ -27,9 +27,9 @@
 #define SYNC_WORD_CHECK_LOG_EN          0
 
 #if SYNC_WORD_CHECK_LOG_EN
-#define log_printf  tlk_printf
+#define log_printf  u_printf
 #else
-#define log_printf
+#define log_printf  u_printf
 #endif
 
 #define COMPARE_FOR_BYTES                1

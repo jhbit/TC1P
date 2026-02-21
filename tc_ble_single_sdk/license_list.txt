@@ -655,5 +655,7 @@
 ./vendor/common/simple_sdp.h			TELINK_APACHE 
 ./vendor/common/sync_word_check.c			TELINK_APACHE 
 ./vendor/common/sync_word_check.h			TELINK_APACHE 
+./vendor/common/tlkapi_debug.c			TELINK_APACHE 
+./vendor/common/tlkapi_debug.h			TELINK_APACHE 
 ./vendor/common/user_config.c			TELINK_APACHE 
 ./vendor/common/user_config.h			TELINK_APACHE 
