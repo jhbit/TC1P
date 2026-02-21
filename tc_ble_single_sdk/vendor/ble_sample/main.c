@@ -52,8 +52,8 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 {
 
 	// DBG_CHN0_LOW;   //debug
-
-	// blc_pm_select_internal_32k_crystal();
+	unsigned int counter = 0;
+	blc_pm_select_external_32k_crystal();
 
 	// #if(MCU_CORE_TYPE == MCU_CORE_825x)
 		cpu_wakeup_init();
@@ -83,6 +83,8 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 
     // irq_enable();
 	UARTIF_uartinit();
+	gpio_set_output_en(GPIO_PD0, 1);
+	gpio_set_input_en(GPIO_PD1, 1);
 	gpio_set_output_en(GPIO_PD2, 1);
 	gpio_set_output_en(GPIO_PD3, 1);
 	gpio_set_output_en(GPIO_PD4, 1);
@@ -93,45 +95,64 @@ _attribute_ram_code_ int main (void)    //must run in ramcode
 	gpio_write(GPIO_PD4, 0);
 	gpio_write(GPIO_PD5, 0);
 
+	gpio_write(GPIO_PD0, 1);
+
 	u_printf("hello world\n");
-	while (1) {
-	// #if (MODULE_WATCHDOG_ENABLE)
-	// 	#if (MCU_CORE_TYPE == MCU_CORE_TC321X)
-	// 		if (g_chip_version != CHIP_VERSION_A0)
-	// 	#endif
-	// 		{
-	// 			wd_clear(); //clear watch dog
-	// 		}
-	// #endif
-	// 	main_loop();
+	while (1)
+	{
+		// #if (MODULE_WATCHDOG_ENABLE)
+		// 	#if (MCU_CORE_TYPE == MCU_CORE_TC321X)
+		// 		if (g_chip_version != CHIP_VERSION_A0)
+		// 	#endif
+		// 		{
+		// 			wd_clear(); //clear watch dog
+		// 		}
+		// #endif
+		// 	main_loop();
 
-	sleep_us(500000);
-	u_printf("===1===\n");
-	gpio_write(GPIO_PD2, 0);
-	gpio_write(GPIO_PD3, 1);
-	gpio_write(GPIO_PD4, 0);
-	gpio_write(GPIO_PD5, 0);
+		sleep_us(500000);
+		u_printf("===1===\n");
+		gpio_write(GPIO_PD2, 0);
+		gpio_write(GPIO_PD3, 1);
+		gpio_write(GPIO_PD4, 0);
+		gpio_write(GPIO_PD5, 0);
 
-	sleep_us(500000);
-	u_printf("===2===\n");
-	gpio_write(GPIO_PD2, 0);
-	gpio_write(GPIO_PD3, 0);
-	gpio_write(GPIO_PD4, 1);
-	gpio_write(GPIO_PD5, 0);
+		sleep_us(500000);
+		u_printf("===2===\n");
+		gpio_write(GPIO_PD2, 0);
+		gpio_write(GPIO_PD3, 0);
+		gpio_write(GPIO_PD4, 1);
+		gpio_write(GPIO_PD5, 0);
 
-	sleep_us(500000);
-	u_printf("===3===\n");
-	gpio_write(GPIO_PD2, 0);
-	gpio_write(GPIO_PD3, 0);
-	gpio_write(GPIO_PD4, 0);
-	gpio_write(GPIO_PD5, 1);
+		sleep_us(500000);
+		u_printf("===3===\n");
+		gpio_write(GPIO_PD2, 0);
+		gpio_write(GPIO_PD3, 0);
+		gpio_write(GPIO_PD4, 0);
+		gpio_write(GPIO_PD5, 1);
 
-	sleep_us(500000);
-	u_printf("===4===\n");
-	gpio_write(GPIO_PD2, 1);
-	gpio_write(GPIO_PD3, 0);
-	gpio_write(GPIO_PD4, 0);
-	gpio_write(GPIO_PD5, 0);
+		sleep_us(500000);
+		u_printf("===4===\n");
+		gpio_write(GPIO_PD2, 1);
+		gpio_write(GPIO_PD3, 0);
+		gpio_write(GPIO_PD4, 0);
+		gpio_write(GPIO_PD5, 0);
+
+
+		u_printf("= PD1 is %d =\n", gpio_read(GPIO_PD1));
+		if (counter <= 30) 
+		{
+			u_printf("counter is %d\n", counter);
+			counter++;
+		}
+		else 
+		{
+			u_printf("Go to sleep !\n");
+			counter = 0;
+			cpu_set_gpio_wakeup (GPIO_PD1, Level_High,1);  //button pin pad low wakeUp suspend/deepSleep
+			cpu_sleep_wakeup(DEEPSLEEP_MODE, PM_WAKEUP_PAD, 0);  //deepSleep
+
+		}
 	}
 }
 
