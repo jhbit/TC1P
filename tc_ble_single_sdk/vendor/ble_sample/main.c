@@ -28,6 +28,40 @@
 #include "timer.h"
 #include "application/uartinterface/uart_interface.h"
 
+
+/**
+ * @brief      LinkLayer RX & TX FIFO configuration
+ */
+/* CAL_LL_ACL_RX_BUF_SIZE(maxRxOct): maxRxOct + 22, then 16 byte align */
+#define RX_FIFO_SIZE	64
+/* must be: 2^n, (power of 2);at least 4; recommended value: 4, 8, 16 */
+#define RX_FIFO_NUM		8
+
+
+/* CAL_LL_ACL_TX_BUF_SIZE(maxTxOct):  maxTxOct + 10, then 4 byte align */
+#define TX_FIFO_SIZE	40
+/* must be: (2^n), (power of 2); at least 8; recommended value: 8, 16, 32, other value not allowed. */
+#define TX_FIFO_NUM		16
+
+
+_attribute_data_retention_  u8 		 	blt_rxfifo_b[RX_FIFO_SIZE * RX_FIFO_NUM] = {0};
+_attribute_data_retention_	my_fifo_t	blt_rxfifo = {
+												RX_FIFO_SIZE,
+												RX_FIFO_NUM,
+												0,
+												0,
+												blt_rxfifo_b,};
+
+
+_attribute_data_retention_  u8 		 	blt_txfifo_b[TX_FIFO_SIZE * TX_FIFO_NUM] = {0};
+_attribute_data_retention_	my_fifo_t	blt_txfifo = {
+												TX_FIFO_SIZE,
+												TX_FIFO_NUM,
+												0,
+												0,
+												blt_txfifo_b,};
+
+
 static u32 tick250ms = 0;
 static u8	tbl_advData[] = {
  7,  DT_COMPLETE_LOCAL_NAME, 				'H', 'H', 'H', 'H', 'H', 'H',
@@ -35,6 +69,8 @@ static u8	tbl_advData[] = {
  3,  DT_APPEARANCE, 						0x66, 0x66, 			// 384, Generic Remote Control, Generic category
  5,  DT_INCOMPLETE_LIST_16BIT_SERVICE_UUID,	0xAA, 0xBB, 0xCC, 0xDD,	// incomplete list of service class UUIDs (0x1812, 0x180F)
 };
+
+int controller_event_callback (u32 h, u8 *p, int n);
 
 static void controllerInitialization(void)
 {
@@ -51,11 +87,12 @@ static void controllerInitialization(void)
 
 	/* for 512K Flash, flash_sector_mac_address equals to 0x76000, for 1M  Flash, flash_sector_mac_address equals to 0xFF000 */
 	blc_initMacAddress(flash_sector_mac_address, mac_public, mac_random_static);
-	u_printf("Public Address: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_public[5], mac_public[4], mac_public[3], mac_public[2], mac_public[1], mac_public[0]);
+	// u_printf("Public Address: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_public[5], mac_public[4], mac_public[3], mac_public[2], mac_public[1], mac_public[0]);
 
 	blc_ll_initBasicMCU();                      //mandatory
 	blc_ll_initStandby_module(mac_public);		//mandatory
 	blc_ll_initAdvertising_module(mac_public); 	//legacy advertising module: mandatory for BLE slave
+	blc_ll_initScanning_module(mac_public);
 
 	adv_param_status = bls_ll_setAdvParam(  ADV_INTERVAL_30MS,
 											ADV_INTERVAL_50MS,
@@ -77,10 +114,20 @@ static void controllerInitialization(void)
 	blc_ll_clearResolvingList();
 	bls_ll_setAdvData( (u8 *)tbl_advData, sizeof(tbl_advData) );
 
-	
-	
-	
 	bls_ll_setAdvEnable(BLC_ADV_ENABLE);  //must: set ADV enable
+
+	blc_ll_addScanningInAdvState();  //add scan in ADV state
+	blc_ll_setScanParameter(SCAN_TYPE_PASSIVE,
+							SCAN_INTERVAL_50MS,
+							SCAN_INTERVAL_50MS,
+							OWN_ADDRESS_PUBLIC,
+							SCAN_FP_ALLOW_ADV_ANY);
+
+	blc_hci_le_setEventMask_cmd(HCI_LE_EVT_MASK_ADVERTISING_REPORT);
+	
+	blc_hci_registerControllerEventHandler(controller_event_callback);
+
+	blc_ll_setScanEnable (BLC_SCAN_ENABLE, DUP_FILTER_ENABLE);
 
 }
 
@@ -140,6 +187,27 @@ static void task250ms(void)
 	counter++;
 }
 
+int controller_event_callback (u32 h, u8 *p, int n)
+{
+    (void)h;(void)p;(void)n;
+	if (h &HCI_FLAG_EVENT_BT_STD)		//ble controller hci event
+	{
+		u8 evtCode = h & 0xff;
+		if(evtCode == HCI_EVT_LE_META)
+		{
+			u8 subEvt_code = p[0];
+			//--------hci le event: le ADV report event ----------------------------------------
+			if (subEvt_code == HCI_SUB_EVT_LE_ADVERTISING_REPORT)	// ADV packet
+			{
+				// blm_le_adv_report_event_handle(p);
+				u_printf("le ADV report event !\n");
+
+			}
+
+		}
+	}
+	return 0;
+}
 
 /**
  * @brief   IRQ handler
