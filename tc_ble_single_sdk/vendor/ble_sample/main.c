@@ -187,6 +187,136 @@ static void task250ms(void)
 	counter++;
 }
 
+/*
+ * Parse LE Advertising Report Event parameters and print fields.
+ * p points to the LE Meta Event parameters starting at the subevent code.
+ * Format (Core v5.0, Vol 2, Part E, 7.7.65.2):
+ *  subevent (1), num_reports (1), for each report:
+ *    event_type (1), address_type (1), address (6), data_length (1), data (N), RSSI (1)
+ */
+static void blm_le_adv_report_event_handle(u8 *p)
+{
+	u8 sub_code = p[0];
+	u8 num_reports = p[1];
+	int idx = 2;
+
+	(void)sub_code; // kept for clarity
+
+	for (int r = 0; r < num_reports; r++) {
+		if (idx + 9 > 255) { // basic sanity
+			u_printf("adv report: malformed, idx overflow\n");
+			return;
+		}
+
+		u8 event_type = p[idx++];
+		u8 addr_type = p[idx++];
+		u8 addr[6];
+		for (int i = 0; i < 6; i++) {
+			addr[i] = p[idx++];
+		}
+
+		u8 data_len = p[idx++];
+		u8 *adv_data = &p[idx];
+		idx += data_len;
+
+		s8 rssi = 0;
+		/* RSSI is present after the data according to spec */
+		rssi = (s8)p[idx++];
+
+		// u_printf("ADV report #%d: evtType=0x%02x, addrType=0x%02x, addr=%02x:%02x:%02x:%02x:%02x:%02x, data_len=%d, RSSI=%d\n",
+		// 		 r, event_type, addr_type,
+		// 		 addr[5], addr[4], addr[3], addr[2], addr[1], addr[0],
+		// 		 data_len, rssi);
+		u_printf("ADV report %d: data: ", r);
+		u_printf("evtType=0x%x ", event_type);
+		u_printf("addrType=0x%x\n", addr_type);
+		u_printf("addr=%x:", addr[5]);
+		u_printf("%x:", addr[4]);
+		u_printf("%x:", addr[3]);
+		u_printf("%x:", addr[2]);
+		u_printf("%x:", addr[1]);
+		u_printf("%x\n", addr[0]);
+		u_printf("data_len=%d, ", data_len);
+		u_printf("RSSI=%d\n", rssi);
+
+		/* Parse Advertising Data (AD structures) */
+		int ad_idx = 0;
+		while (ad_idx < data_len) {
+			u8 ad_len = adv_data[ad_idx++];
+			if (ad_len == 0) break; /* no more AD structures */
+			if (ad_idx >= data_len) break;
+
+			u8 ad_type = adv_data[ad_idx++];
+			u8 ad_val_len = ad_len - 1; /* subtract the type byte */
+			u8 *ad_val = &adv_data[ad_idx];
+
+			/* Print AD type and value */
+			switch (ad_type) {
+				case 0x01: /* Flags */
+					u_printf("  AD: Flags (0x01): 0x%x\n", ad_val_len ? ad_val[0] : 0);
+					break;
+				case 0x02: /* Incomplete List of 16-bit Service Class UUIDs */
+				case 0x03: /* Complete List of 16-bit Service Class UUIDs */
+					u_printf("  AD: 16-bit Service UUIDs (0x%x), len=%d:\n", ad_type, ad_val_len);
+					for (int j = 0; j + 1 < ad_val_len + 1; j += 2) {
+						if (j + 1 >= ad_val_len) break;
+						u16 uuid16 = ad_val[j] | (ad_val[j+1] << 8);
+						u_printf("    - 0x%x\n", uuid16);
+					}
+					break;
+				case 0x06: /* Incomplete List of 128-bit Service Class UUIDs */
+				case 0x07: /* Complete List of 128-bit Service Class UUIDs */
+					u_printf("  AD: 128-bit Service UUIDs (0x%x), len=%d\n", ad_type, ad_val_len);
+					for (int j = 0; j + 15 < ad_val_len + 1; j += 16) {
+						u_printf("    - ");
+						for (int k = 15; k >= 0; k--) {
+							u_printf("%x", ad_val[j + k]);
+						}
+						u_printf("\n");
+					}
+					break;
+				case 0x08: /* Shortened Local Name */
+				case 0x09: /* Complete Local Name */
+			{
+				/* print as string */
+				char name[32];
+				int copy_len = ad_val_len < (int)(sizeof(name)-1) ? ad_val_len : (int)(sizeof(name)-1);
+				for (int j = 0; j < copy_len; j++) name[j] = (char)ad_val[j];
+				name[copy_len] = '\0';
+				u_printf("  AD: Local Name (0x%x): %s\n", ad_type, name);
+			}
+					break;
+				case 0x0A: /* Tx Power Level */
+					u_printf("  AD: Tx Power Level (0x0A): %d dBm\n", (int)(s8)ad_val[0]);
+					break;
+				case 0x16: /* Service Data - 16-bit UUID */
+					if (ad_val_len >= 2) {
+						u16 sd_uuid = ad_val[0] | (ad_val[1] << 8);
+						u_printf("  AD: Service Data - 16-bit UUID: 0x%x, data_len=%d\n", sd_uuid, ad_val_len-2);
+					} else {
+						u_printf("  AD: Service Data (0x16) len invalid\n");
+					}
+					break;
+				case 0xFF: /* Manufacturer Specific Data */
+					u_printf("  AD: Manufacturer Specific Data (0xFF), len=%d:\n", ad_val_len);
+					u_printf("    ");
+					for (int j = 0; j < ad_val_len; j++) u_printf("%x", ad_val[j]);
+					u_printf("\n");
+					break;
+				default:
+					u_printf("  AD: type=0x%x, len=%d:\n    ", ad_type, ad_val_len);
+					for (int j = 0; j < ad_val_len; j++) u_printf("%x", ad_val[j]);
+					u_printf("\n");
+					break;
+			}
+
+			/* advance ad_idx by ad_val_len */
+			ad_idx += ad_val_len;
+		}
+	}
+}
+
+
 int controller_event_callback (u32 h, u8 *p, int n)
 {
     (void)h;(void)p;(void)n;
@@ -199,8 +329,9 @@ int controller_event_callback (u32 h, u8 *p, int n)
 			//--------hci le event: le ADV report event ----------------------------------------
 			if (subEvt_code == HCI_SUB_EVT_LE_ADVERTISING_REPORT)	// ADV packet
 			{
-				// blm_le_adv_report_event_handle(p);
-				u_printf("le ADV report event !\n");
+				blm_le_adv_report_event_handle(p);
+				// high-level notification kept for backward compatibility
+				// u_printf("le ADV report event !\n");
 
 			}
 
